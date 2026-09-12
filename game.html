@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة XO - Tic Tac Toe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            text-align: center;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .status {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 30px;
+            min-height: 30px;
+            font-weight: bold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border: none;
+            font-size: 2.5em;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            color: #667eea;
+        }
+
+        .cell:hover {
+            background: #f5f5f5;
+            transform: scale(1.05);
+        }
+
+        .cell:active {
+            transform: scale(0.95);
+        }
+
+        .cell.x {
+            color: #667eea;
+        }
+
+        .cell.o {
+            color: #764ba2;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn {
+            background: #667eea;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .stats-btn {
+            background: #764ba2;
+            color: white;
+        }
+
+        .stats-btn:hover {
+            background: #613f8b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .stats {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .stats.show {
+            display: block;
+        }
+
+        .stats h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 لعبة XO</h1>
+        <div class="status" id="status">اللاعب X يبدأ أولاً</div>
+        
+        <div class="game-board" id="gameBoard">
+            <button class="cell" data-index="0"></button>
+            <button class="cell" data-index="1"></button>
+            <button class="cell" data-index="2"></button>
+            <button class="cell" data-index="3"></button>
+            <button class="cell" data-index="4"></button>
+            <button class="cell" data-index="5"></button>
+            <button class="cell" data-index="6"></button>
+            <button class="cell" data-index="7"></button>
+            <button class="cell" data-index="8"></button>
+        </div>
+
+        <div class="button-group">
+            <button class="reset-btn" onclick="resetGame()">🔄 لعبة جديدة</button>
+            <button class="stats-btn" onclick="toggleStats()">📊 الإحصائيات</button>
+        </div>
+
+        <div class="stats" id="stats">
+            <h3>الإحصائيات</h3>
+            <div class="stat-item">
+                <span class="stat-label">عدد انتصارات X:</span>
+                <span class="stat-value" id="winsX">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">عدد انتصارات O:</span>
+                <span class="stat-value" id="winsO">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">عدد التعادلات:</span>
+                <span class="stat-value" id="draws">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">إجمالي اللعب:</span>
+                <span class="stat-value" id="totalGames">0</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gameBoard = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let stats = {
+            winsX: 0,
+            winsO: 0,
+            draws: 0,
+            totalGames: 0
+        };
+
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        // تحميل الإحصائيات من التخزين المحلي
+        function loadStats() {
+            const savedStats = localStorage.getItem('xoStats');
+            if (savedStats) {
+                stats = JSON.parse(savedStats);
+                updateStatsDisplay();
+            }
+        }
+
+        // حفظ الإحصائيات في التخزين المحلي
+        function saveStats() {
+            localStorage.setItem('xoStats', JSON.stringify(stats));
+        }
+
+        // تحديث عرض الإحصائيات
+        function updateStatsDisplay() {
+            document.getElementById('winsX').textContent = stats.winsX;
+            document.getElementById('winsO').textContent = stats.winsO;
+            document.getElementById('draws').textContent = stats.draws;
+            document.getElementById('totalGames').textContent = stats.totalGames;
+        }
+
+        // إظهار/إخفاء الإحصائيات
+        function toggleStats() {
+            const statsDiv = document.getElementById('stats');
+            statsDiv.classList.toggle('show');
+        }
+
+        // معالجة نقرة على الخلية
+        document.querySelectorAll('.cell').forEach(cell => {
+            cell.addEventListener('click', function() {
+                const index = this.dataset.index;
+                
+                if (gameBoard[index] === '' && gameActive) {
+                    gameBoard[index] = currentPlayer;
+                    this.textContent = currentPlayer;
+                    this.classList.add(currentPlayer.toLowerCase());
+                    
+                    checkGameStatus();
+                    
+                    if (gameActive) {
+                        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                        updateStatus();
+                    }
+                }
+            });
+        });
+
+        // التحقق من حالة اللعبة
+        function checkGameStatus() {
+            for (let condition of winningConditions) {
+                const [a, b, c] = condition;
+                if (gameBoard[a] !== '' && gameBoard[a] === gameBoard[b] && gameBoard[a] === gameBoard[c]) {
+                    gameActive = false;
+                    document.getElementById('status').textContent = `🎉 اللاعب ${gameBoard[a]} فاز باللعبة!`;
+                    stats[gameBoard[a] === 'X' ? 'winsX' : 'winsO']++;
+                    stats.totalGames++;
+                    saveStats();
+                    updateStatsDisplay();
+                    return;
+                }
+            }
+            
+            if (!gameBoard.includes('')) {
+                gameActive = false;
+                document.getElementById('status').textContent = '🤝 تعادل! لا يوجد فائز';
+                stats.draws++;
+                stats.totalGames++;
+                saveStats();
+                updateStatsDisplay();
+            }
+        }
+
+        // تحديث الحالة
+        function updateStatus() {
+            if (gameActive) {
+                document.getElementById('status').textContent = `دور اللاعب ${currentPlayer}`;
+            }
+        }
+
+        // إعادة تعيين اللعبة
+        function resetGame() {
+            gameBoard = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = 'X';
+            gameActive = true;
+            document.querySelectorAll('.cell').forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('x', 'o');
+            });
+            updateStatus();
+        }
+
+        // تهيئة اللعبة
+        loadStats();
+        updateStatus();
+    </script>
+</body>
+</html>
